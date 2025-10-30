@@ -7,8 +7,8 @@ RUN apk add --no-cache \
     py3-pip \
     ffmpeg
 
-# Install yt-dlp
-RUN pip3 install --upgrade yt-dlp
+# Install yt-dlp (with --break-system-packages for Python 3.12+)
+RUN pip3 install --break-system-packages --upgrade yt-dlp
 
 # Set working directory
 WORKDIR /app
