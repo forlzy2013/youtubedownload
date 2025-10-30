@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables (IMPORTANT: Never commit these!)
+.env
+.env.local
+.env.production
+.env.*.local
+worker/.env
+
+# Vercel
+.vercel
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Kiro internal files (optional - keep specs but exclude some internal files)
+.kiro/specs/youtube-mp3-downloader/.env.local
+.kiro/specs/youtube-mp3-downloader/PREPARATION-PROGRESS.md
+
+# Test files (optional)
+*.test.local.js
+
+# Build outputs
+dist/
+build/

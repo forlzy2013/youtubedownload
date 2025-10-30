@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL Validator Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+    }
+    .test-case {
+      background: white;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-url {
+      font-family: monospace;
+      background: #f0f0f0;
+      padding: 8px;
+      border-radius: 4px;
+      margin: 10px 0;
+      word-break: break-all;
+    }
+    .result {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .result.valid {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #4caf50;
+    }
+    .result.invalid {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #f44336;
+    }
+    .video-id {
+      font-weight: bold;
+      font-family: monospace;
+    }
+    .summary {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 30px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .summary h2 {
+      margin-top: 0;
+      color: #333;
+    }
+    .stats {
+      display: flex;
+      gap: 20px;
+      margin-top: 15px;
+    }
+    .stat {
+      flex: 1;
+      text-align: center;
+      padding: 15px;
+      border-radius: 4px;
+    }
+    .stat.passed {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .stat.failed {
+      background: #ffebee;
+      color: #c62828;
+    }
+    .stat-number {
+      font-size: 2em;
+      font-weight: bold;
+    }
+    .stat-label {
+      font-size: 0.9em;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 URL Validator Test Suite</h1>
+  
+  <div id="testResults"></div>
+  
+  <div class="summary" id="summary"></div>
+
+  <script type="module">
+    // Import URLValidator class
+    class URLValidator {
+      constructor() {
+        this.patterns = {
+          watch: /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})(?:&.*)?/,
+          short: /(?:https?:\/\/)?youtu\.be\/([a-zA-Z0-9_-]{11})(?:\?.*)?/,
+          embed: /(?:https?:\/\/)?(?:www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]{11})(?:\?.*)?/,
+          mobile: /(?:https?:\/\/)?m\.youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})(?:&.*)?/,
+          shorts: /(?:https?:\/\/)?(?:www\.)?youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})(?:\?.*)?/
+        };
+      }
+
+      validate(url) {
+        if (!url || url.trim() === '') {
+          return {
+            valid: false,
+            videoId: null,
+            error: 'Please enter a YouTube URL'
+          };
+        }
+
+        url = url.trim();
+        const videoId = this.extractVideoId(url);
+
+        if (videoId) {
+          return {
+            valid: true,
+            videoId: videoId,
+            error: null
+          };
+        }
+
+        return {
+          valid: false,
+          videoId: null,
+          error: 'Invalid YouTube URL'
+        };
+      }
+
+      extractVideoId(url) {
+        for (const [format, pattern] of Object.entries(this.patterns)) {
+          const match = url.match(pattern);
+          if (match && match[1]) {
+            return match[1];
+          }
+        }
+        return null;
+      }
+
+      isYouTubeURL(url) {
+        return /(?:youtube\.com|youtu\.be)/.test(url);
+      }
+
+      getURLFormat(url) {
+        for (const [format, pattern] of Object.entries(this.patterns)) {
+          if (pattern.test(url)) {
+            return format;
+          }
+        }
+        return null;
+      }
+    }
+
+    // Test cases
+    const testCases = [
+      // Valid URLs
+      { url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', expected: 'dQw4w9WgXcQ', description: 'Standard watch URL (HTTPS)' },
+      { url: 'http://www.youtube.com/watch?v=dQw4w9WgXcQ', expected: 'dQw4w9WgXcQ', description: 'Standard watch URL (HTTP)' },
+      { url: 'https://youtube.com/watch?v=dQw4w9WgXcQ', expected: 'dQw4w9WgXcQ', description: 'Watch URL without www' },
+      { url: 'www.youtube.com/watch?v=dQw4w9WgXcQ', expected: 'dQw4w9WgXcQ', description: 'Watch URL without protocol' },
+      { url: 'youtube.com/watch?v=dQw4w9WgXcQ', expected: 'dQw4w9WgXcQ', description: 'Watch URL minimal' },
+      { url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=30s', expected: 'dQw4w9WgXcQ', description: 'Watch URL with timestamp' },
+      { url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=PLxxx', expected: 'dQw4w9WgXcQ', description: 'Watch URL with playlist' },
+      
+      { url: 'https://youtu.be/dQw4w9WgXcQ', expected: 'dQw4w9WgXcQ', description: 'Short URL (HTTPS)' },
+      { url: 'http://youtu.be/dQw4w9WgXcQ', expected: 'dQw4w9WgXcQ', description: 'Short URL (HTTP)' },
+      { url: 'youtu.be/dQw4w9WgXcQ', expected: 'dQw4w9WgXcQ', description: 'Short URL without protocol' },
+      { url: 'https://youtu.be/dQw4w9WgXcQ?t=30', expected: 'dQw4w9WgXcQ', description: 'Short URL with timestamp' },
+      
+      { url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', expected: 'dQw4w9WgXcQ', description: 'Embed URL' },
+      { url: 'https://youtube.com/embed/dQw4w9WgXcQ', expected: 'dQw4w9WgXcQ', description: 'Embed URL without www' },
+      { url: 'https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1', expected: 'dQw4w9WgXcQ', description: 'Embed URL with params' },
+      
+      { url: 'https://m.youtube.com/watch?v=dQw4w9WgXcQ', expected: 'dQw4w9WgXcQ', description: 'Mobile URL' },
+      
+      { url: 'https://www.youtube.com/shorts/dQw4w9WgXcQ', expected: 'dQw4w9WgXcQ', description: 'Shorts URL' },
+      { url: 'https://youtube.com/shorts/dQw4w9WgXcQ', expected: 'dQw4w9WgXcQ', description: 'Shorts URL without www' },
+      
+      // Invalid URLs
+      { url: '', expected: null, description: 'Empty string' },
+      { url: '   ', expected: null, description: 'Whitespace only' },
+      { url: 'https://www.google.com', expected: null, description: 'Non-YouTube URL' },
+      { url: 'https://www.youtube.com', expected: null, description: 'YouTube homepage' },
+      { url: 'https://www.youtube.com/watch', expected: null, description: 'Watch page without video ID' },
+      { url: 'https://www.youtube.com/watch?v=short', expected: null, description: 'Invalid video ID (too short)' },
+      { url: 'https://www.youtube.com/watch?v=toolongvideoid123', expected: null, description: 'Invalid video ID (too long)' },
+      { url: 'not a url', expected: null, description: 'Random text' },
+    ];
+
+    // Run tests
+    const validator = new URLValidator();
+    const results = [];
+    let passed = 0;
+    let failed = 0;
+
+    testCases.forEach((testCase, index) => {
+      const result = validator.validate(testCase.url);
+      const success = result.videoId === testCase.expected;
+      
+      if (success) {
+        passed++;
+      } else {
+        failed++;
+      }
+
+      results.push({
+        ...testCase,
+        result,
+        success
+      });
+    });
+
+    // Display results
+    const resultsContainer = document.getElementById('testResults');
+    results.forEach((test, index) => {
+      const div = document.createElement('div');
+      div.className = 'test-case';
+      div.innerHTML = `
+        <strong>Test ${index + 1}:</strong> ${test.description}
+        <div class="test-url">${test.url || '(empty)'}</div>
+        <div class="result ${test.success ? 'valid' : 'invalid'}">
+          ${test.success ? '✅ PASSED' : '❌ FAILED'}<br>
+          Expected: ${test.expected || 'null'}<br>
+          Got: ${test.result.videoId || 'null'}
+          ${test.result.error ? `<br>Error: ${test.result.error}` : ''}
+        </div>
+      `;
+      resultsContainer.appendChild(div);
+    });
+
+    // Display summary
+    const summaryContainer = document.getElementById('summary');
+    const total = testCases.length;
+    const passRate = ((passed / total) * 100).toFixed(1);
+    
+    summaryContainer.innerHTML = `
+      <h2>Test Summary</h2>
+      <div class="stats">
+        <div class="stat passed">
+          <div class="stat-number">${passed}</div>
+          <div class="stat-label">Passed</div>
+        </div>
+        <div class="stat failed">
+          <div class="stat-number">${failed}</div>
+          <div class="stat-label">Failed</div>
+        </div>
+        <div class="stat ${passRate === '100.0' ? 'passed' : 'failed'}">
+          <div class="stat-number">${passRate}%</div>
+          <div class="stat-label">Pass Rate</div>
+        </div>
+      </div>
+      <p style="margin-top: 20px; text-align: center; color: ${passRate === '100.0' ? '#2e7d32' : '#c62828'};">
+        <strong>${passRate === '100.0' ? '🎉 All tests passed!' : '⚠️ Some tests failed'}</strong>
+      </p>
+    `;
+  </script>
+</body>
+</html>

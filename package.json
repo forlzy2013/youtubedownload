@@ -1,0 +1,26 @@
+{
+  "name": "youtube-mp3-downloader",
+  "version": "1.0.0",
+  "description": "A fast and reliable YouTube to MP3 downloader with smart routing and hybrid storage",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "youtube",
+    "mp3",
+    "downloader",
+    "converter",
+    "audio"
+  ],
+  "author": "forlzy2013",
+  "license": "MIT",
+  "dependencies": {
+    "@upstash/redis": "^1.28.0"
+  },
+  "devDependencies": {
+    "vercel": "^33.0.0"
+  }
+}

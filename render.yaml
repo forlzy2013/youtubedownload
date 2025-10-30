@@ -1,0 +1,35 @@
+# Render deployment configuration
+services:
+  - type: web
+    name: youtube-mp3-worker
+    env: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./worker/Dockerfile
+    dockerContext: ./worker
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      - key: R2_ENDPOINT
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        value: youtube-mp3-downloads
+      - key: R2_PUBLIC_URL
+        sync: false
+      - key: MAX_CONCURRENT_TASKS
+        value: 3
+      - key: TASK_TIMEOUT
+        value: 120000
+      - key: MAX_FILE_SIZE
+        value: 104857600
+      - key: SMALL_FILE_THRESHOLD
+        value: 5242880
