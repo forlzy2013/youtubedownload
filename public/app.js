@@ -204,13 +204,14 @@ class DownloadManager {
    */
   async startDownload(url) {
     if (this.isDownloading) {
+      console.warn('⚠️ Download already in progress, ignoring request');
       return;
     }
 
     this.isDownloading = true;
 
     try {
-      console.log('Starting download for:', url);
+      console.log('🎬 Starting download for:', url);
 
       // Call /api/download
       const response = await fetch(`/api/download?url=${encodeURIComponent(url)}`);
@@ -243,7 +244,7 @@ class DownloadManager {
    * @param {object} data - Response data {downloadUrl, filename}
    */
   async handleDirectDownload(data) {
-    console.log('Fast Track download:', data);
+    console.log('🚀 Fast Track download:', data);
 
     try {
       // Trigger browser download
@@ -266,17 +267,19 @@ class DownloadManager {
       this.isDownloading = false;
       
     } catch (error) {
-      console.error('Fast Track download failed:', error);
+      console.error('❌ Fast Track download failed:', error);
       
-      // Check if link expired or not found
+      // Enhanced link expiration detection
       const isLinkExpired = error.message.includes('404') || 
                            error.message.includes('Not Found') ||
                            error.message.includes('expired') ||
-                           error.message.includes('Failed to download file');
+                           error.message.includes('Failed to download file') ||
+                           error.message.includes('Proxy download failed') ||
+                           error.message.includes('External server returned 404');
       
       if (isLinkExpired) {
         console.log('🔄 Fast Track link expired, falling back to Stable Track');
-        showWarning('Fast Track link expired. Switching to Stable Track...');
+        showWarning('Link expired. Switching to Stable Track...');
         
         // Get original URL from input
         const urlInput = document.getElementById('urlInput');
@@ -343,17 +346,18 @@ class DownloadManager {
       filename = decodeURIComponent(filename);
     } catch (e) {
       // Keep original if decode fails
+      console.warn('Failed to decode filename:', e);
     }
     
-    // Remove invalid characters
+    // Remove invalid characters (including control characters)
     let sanitized = filename
-      .replace(/[<>:"/\\|?*\x00-\x1f]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/\.{2,}/g, '.')
-      .replace(/^[.-]+|[.-]+$/g, '')
+      .replace(/[<>:"/\\|?*\x00-\x1f]/g, '')  // Invalid chars + control chars
+      .replace(/\s+/g, '-')                    // Spaces to hyphens
+      .replace(/\.{2,}/g, '.')                 // Multiple dots to single
+      .replace(/^[.-]+|[.-]+$/g, '')           // Leading/trailing dots/hyphens
       .trim();
     
-    // Truncate if too long
+    // Truncate if too long (leave room for .mp3)
     if (sanitized.length > 100) {
       sanitized = sanitized.substring(0, 96);
     }
@@ -363,6 +367,7 @@ class DownloadManager {
       sanitized += '.mp3';
     }
     
+    // Final fallback
     return sanitized || 'download.mp3';
   }
 
@@ -375,10 +380,11 @@ class DownloadManager {
     try {
       // Sanitize filename
       filename = this.sanitizeFilename(filename);
+      console.log(`📁 Sanitized filename: ${filename}`);
       
       // For external URLs, try direct download first, then proxy if CORS fails
       if (url.startsWith('http://') || url.startsWith('https://')) {
-        console.log('Downloading from external URL:', url);
+        console.log('🌐 Downloading from external URL:', url);
         
         // Show downloading message
         showProcessing('Downloading file...');
@@ -388,7 +394,7 @@ class DownloadManager {
         
         try {
           // Try direct download first
-          console.log('Trying direct download...');
+          console.log('🔄 Trying direct download...');
           const response = await fetch(url, {
             mode: 'cors',
             credentials: 'omit',
@@ -403,12 +409,12 @@ class DownloadManager {
           
           blob = await response.blob();
           method = 'direct';
-          console.log('Direct download successful');
+          console.log('✅ Direct download successful');
         } catch (directError) {
-          console.warn('Direct download failed:', directError.message);
+          console.warn('⚠️ Direct download failed:', directError.message);
           
           // Try proxy download
-          console.log('Trying proxy download...');
+          console.log('🔄 Trying proxy download...');
           const proxyUrl = `/api/proxy-download?url=${encodeURIComponent(url)}`;
           const proxyResponse = await fetch(proxyUrl);
           
@@ -419,7 +425,7 @@ class DownloadManager {
           
           blob = await proxyResponse.blob();
           method = 'proxy';
-          console.log('Proxy download successful');
+          console.log('✅ Proxy download successful');
         }
         
         // Validate blob
@@ -427,7 +433,7 @@ class DownloadManager {
           throw new Error('Downloaded file is empty');
         }
         
-        console.log(`Downloaded ${(blob.size / 1024 / 1024).toFixed(2)}MB via ${method}`);
+        console.log(`📦 Downloaded ${(blob.size / 1024 / 1024).toFixed(2)}MB via ${method}`);
         
         // Create object URL
         const blobUrl = URL.createObjectURL(blob);
@@ -447,9 +453,10 @@ class DownloadManager {
           URL.revokeObjectURL(blobUrl);
         }, 100);
         
-        console.log('Download triggered successfully');
+        console.log('✅ Download triggered successfully');
       } else {
         // For data URLs or same-origin URLs, use direct download
+        console.log('📥 Using direct download for same-origin URL');
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
@@ -462,9 +469,11 @@ class DownloadManager {
         setTimeout(() => {
           document.body.removeChild(a);
         }, 100);
+        
+        console.log('✅ Download triggered successfully');
       }
     } catch (error) {
-      console.error('Download error:', error);
+      console.error('❌ Download error:', error);
       throw new Error(error.message || 'Failed to download file. Please try again.');
     }
   }
@@ -1065,6 +1074,25 @@ function showSuccess(message) {
     setTimeout(() => {
       successMessage.classList.add('hidden');
     }, 5000);
+  }
+}
+
+/**
+ * Show warning message
+ * @param {string} message - Warning message
+ */
+function showWarning(message) {
+  const warningMessage = document.getElementById('warningMessage');
+  const warningText = document.getElementById('warningText');
+  
+  if (warningMessage && warningText) {
+    warningText.textContent = message;
+    warningMessage.classList.remove('hidden');
+    
+    // Auto-hide after 8 seconds
+    setTimeout(() => {
+      warningMessage.classList.add('hidden');
+    }, 8000);
   }
 }
 
