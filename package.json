@@ -5,8 +5,11 @@
   "main": "index.js",
   "scripts": {
     "dev": "vercel dev",
-    "build": "vercel build",
-    "deploy": "vercel --prod"
+    "check": "node check-env.js",
+    "deploy": "node deploy-all.js",
+    "deploy:vercel": "vercel --prod",
+    "deploy:render": "node deploy-render.js",
+    "test:e2e": "bash test-e2e.sh"
   },
   "keywords": [
     "youtube",

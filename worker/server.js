@@ -117,18 +117,23 @@ app.post('/download', async (req, res) => {
     taskId: taskId
   });
 
-  // Process task asynchronously (will be implemented in later tasks)
-  // For now, just log it
+  // Process task asynchronously
   queueSize++;
   console.log(`📋 Task ${taskId} queued (queue size: ${queueSize})`);
   
-  // TODO: Implement task processing in Task 20
-  // This will be handled by the download-handler module
+  // Import and call download handler
+  const downloadHandler = require('./download-handler');
   
-  setTimeout(() => {
-    queueSize--;
-    console.log(`✅ Task ${taskId} placeholder completed (queue size: ${queueSize})`);
-  }, 1000);
+  // Process in background (don't await)
+  downloadHandler.process(taskId, url)
+    .then(() => {
+      queueSize--;
+      console.log(`✅ Task ${taskId} completed successfully (queue size: ${queueSize})`);
+    })
+    .catch((error) => {
+      queueSize--;
+      console.error(`❌ Task ${taskId} failed: ${error.message} (queue size: ${queueSize})`);
+    });
 });
 
 /**

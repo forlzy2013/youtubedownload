@@ -1,0 +1,60 @@
+
+
+
+
+项目路径：C:\Users\TempAdmin\Desktop\exercise\tool\youtube download\project4
+
+
+
+ 账号信息 ===
+GitHub 用户名: forlzy2013
+Vercel: ✓ 
+Render: ✓ 
+RapidAPI: ✓ 
+Upstash: ✓ / ✗
+
+=== API 密钥 ===
+RapidAPI Key: 2411876baamsh8db1f6ac9e4b41fp1ed553jsn3520b7122fec
+Upstash REDIS_URL="rediss://default:ARgTAAImcDJlZmFkODdiNTE3NTg0ODcwOGUwNmJkZDY1MGNjNzczY3AyNjE2Mw@amazed-quagga-6163.upstash.io:6379"
+Upstash Redis Token: ARgTAAImcDJlZmFkODdiNTE3NTg0ODcwOGUwNmJkZDY1MGNjNzczY3AyNjE2Mw
+UPSTASH_REDIS_REST_URL="https://amazed-quagga-6163.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="ARgTAAImcDJlZmFkODdiNTE3NTg0ODcwOGUwNmJkZDY1MGNjNzczY3AyNjE2Mw"
+
+R2：
+	公共开发 URL：https://pub-26a6e40311764f32b576bbb68ff6f8ba.r2.dev
+	令牌值：5Pws4qoZ2C_PCw2aMGQwcQRH6wS7paXzbLRldw_r
+	
+	
+	
+	
+	
+	1. R2 Endpoint (在R2主页右侧可以看到)
+
+R2_ENDPOINT=https://92e41f3c8ef6645036608f8b563d9604.r2.cloudflarestorage.com
+
+
+# 2. Access Key ID (步骤5中复制的)
+R2_ACCESS_KEY_ID=e889fc75040a0dce67ce8d9cf50598f9
+
+# 3. Secret Access Key (步骤5中复制的)
+R2_SECRET_ACCESS_KEY=b34670109e8580352d391533bc73e0e8286921f869b3922fba58932e400d8b69
+
+# 4. Bucket名称
+R2_BUCKET_NAME="youtube-mp3-downloads"
+
+# 5. 公共访问URL (步骤4.1中记录的)
+R2_PUBLIC_URL=https://pub-26a6e40311764f32b576bbb68ff6f8ba.r2.dev
+```
+
+
+
+
+=== 本地环境 ===
+Node.js 版本: v20.17.0
+Git 版本:git version 2.50.0.windows.1
+项目路径: 
+
+=== 可选 ===
+Sentry DSN: _______________ (可选)
+
+github  repo url:https://github.com/forlzy2013/youtubedownload
