@@ -242,27 +242,32 @@ class DownloadManager {
    * Handle direct download (Fast Track)
    * @param {object} data - Response data {downloadUrl, filename}
    */
-  handleDirectDownload(data) {
+  async handleDirectDownload(data) {
     console.log('Fast Track download:', data);
 
-    // Trigger browser download
-    this.triggerBrowserDownload(data.downloadUrl, data.filename);
+    try {
+      // Trigger browser download
+      await this.triggerBrowserDownload(data.downloadUrl, data.filename);
 
-    // Save to history
-    const videoData = videoInfoManager.getCurrentVideo();
-    historyManager.saveDownload({
-      videoId: data.videoId,
-      videoTitle: videoData?.title || `Video ${data.videoId}`,
-      filename: data.filename,
-      downloadUrl: data.downloadUrl,
-      fileSize: 'Unknown'
-    });
+      // Save to history
+      const videoData = videoInfoManager.getCurrentVideo();
+      historyManager.saveDownload({
+        videoId: data.videoId,
+        videoTitle: videoData?.title || `Video ${data.videoId}`,
+        filename: data.filename,
+        downloadUrl: data.downloadUrl,
+        fileSize: 'Unknown'
+      });
 
-    // Show success message
-    showSuccess(`Download started! Using Fast Track (API ${data.apiUsed})`);
-
-    // Reset state
-    this.isDownloading = false;
+      // Show success message
+      showSuccess(`Download completed! Using Fast Track (API ${data.apiUsed})`);
+    } catch (error) {
+      console.error('Download failed:', error);
+      showErrorWithRetry(error.message || 'Download failed. Please try again.');
+    } finally {
+      // Reset state
+      this.isDownloading = false;
+    }
   }
 
   /**
@@ -287,19 +292,83 @@ class DownloadManager {
    * @param {string} url - Download URL
    * @param {string} filename - Filename
    */
-  triggerBrowserDownload(url, filename) {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename || 'download.mp3';
-    a.style.display = 'none';
-    
-    document.body.appendChild(a);
-    a.click();
-    
-    // Clean up
-    setTimeout(() => {
-      document.body.removeChild(a);
-    }, 100);
+  async triggerBrowserDownload(url, filename) {
+    try {
+      // For external URLs, try direct download first, then proxy if CORS fails
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        console.log('Downloading from external URL:', url);
+        
+        // Show downloading message
+        showProcessing('Downloading file...');
+        
+        let blob;
+        
+        try {
+          // Try direct download first
+          const response = await fetch(url, {
+            mode: 'cors',
+            credentials: 'omit'
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          
+          blob = await response.blob();
+          console.log('Direct download successful');
+        } catch (directError) {
+          console.warn('Direct download failed, trying proxy:', directError.message);
+          
+          // Try proxy download
+          const proxyUrl = `/api/proxy-download?url=${encodeURIComponent(url)}`;
+          const proxyResponse = await fetch(proxyUrl);
+          
+          if (!proxyResponse.ok) {
+            throw new Error('Download failed. The link may have expired.');
+          }
+          
+          blob = await proxyResponse.blob();
+          console.log('Proxy download successful');
+        }
+        
+        // Create object URL
+        const blobUrl = URL.createObjectURL(blob);
+        
+        // Create download link
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename || 'download.mp3';
+        a.style.display = 'none';
+        
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(blobUrl);
+        }, 100);
+        
+        console.log('Download triggered successfully');
+      } else {
+        // For data URLs or same-origin URLs, use direct download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'download.mp3';
+        a.style.display = 'none';
+        
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(a);
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Download error:', error);
+      throw new Error(error.message || 'Failed to download file. Please try again.');
+    }
   }
 
   /**
