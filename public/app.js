@@ -261,6 +261,10 @@ class DownloadManager {
 
       // Show success message
       showSuccess(`Download completed! Using Fast Track (API ${data.apiUsed})`);
+      
+      // Reset downloading state
+      this.isDownloading = false;
+      
     } catch (error) {
       console.error('Fast Track download failed:', error);
       
@@ -268,10 +272,10 @@ class DownloadManager {
       const isLinkExpired = error.message.includes('404') || 
                            error.message.includes('Not Found') ||
                            error.message.includes('expired') ||
-                           error.message.includes('Proxy download failed');
+                           error.message.includes('Failed to download file');
       
       if (isLinkExpired) {
-        console.log('Fast Track link expired, falling back to Stable Track');
+        console.log('🔄 Fast Track link expired, falling back to Stable Track');
         showWarning('Fast Track link expired. Switching to Stable Track...');
         
         // Get original URL from input
@@ -279,24 +283,31 @@ class DownloadManager {
         if (urlInput && urlInput.value) {
           try {
             // Call API to create Stable Track task
+            console.log('📡 Requesting Stable Track fallback...');
             const response = await fetch(`/api/download?url=${encodeURIComponent(urlInput.value)}&force_stable=true`);
             const fallbackData = await response.json();
+            
+            console.log('📦 Stable Track response:', fallbackData);
             
             if (fallbackData.success && fallbackData.type === 'async') {
               // Handle as async download
               this.handleAsyncDownload(fallbackData);
-              return; // Don't reset isDownloading yet
+              return; // Don't reset isDownloading - polling will handle it
+            } else {
+              throw new Error(fallbackData.error || 'Stable Track fallback failed');
             }
           } catch (fallbackError) {
-            console.error('Stable Track fallback failed:', fallbackError);
+            console.error('❌ Stable Track fallback failed:', fallbackError);
+            showErrorWithRetry('Both Fast Track and Stable Track failed. Please try again.');
+            this.isDownloading = false;
           }
+        } else {
+          showErrorWithRetry('Cannot fallback to Stable Track: URL not found');
+          this.isDownloading = false;
         }
-      }
-      
-      showErrorWithRetry(error.message || 'Download failed. Please try again.');
-    } finally {
-      // Reset state only if not falling back to Stable Track
-      if (!this.currentTaskId) {
+      } else {
+        // Other errors - don't fallback
+        showErrorWithRetry(error.message || 'Download failed. Please try again.');
         this.isDownloading = false;
       }
     }
