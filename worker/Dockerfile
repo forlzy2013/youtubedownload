@@ -13,19 +13,18 @@ RUN pip3 install --break-system-packages --upgrade yt-dlp
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files from worker directory
+COPY worker/package*.json ./
 
 # Install Node.js dependencies
 RUN npm install --only=production
 
-# Copy application code
-COPY . .
+# Copy application code from worker directory
+COPY worker/*.js ./
 
-# Debug: List files to verify copy
+# Verify files are copied correctly
 RUN echo "=== Contents of /app directory ===" && ls -la /app
-RUN echo "=== Checking server.js ===" && ls -la /app/server.js || echo "ERROR: server.js not found!"
-RUN echo "=== Current working directory ===" && pwd
+RUN echo "=== Checking server.js ===" && ls -la /app/server.js
 
 # Expose port
 EXPOSE 3000

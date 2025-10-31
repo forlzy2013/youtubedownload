@@ -6,7 +6,6 @@ services:
     plan: free
     region: singapore
     dockerfilePath: ./worker/Dockerfile
-    dockerContext: ./worker
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
