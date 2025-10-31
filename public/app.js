@@ -262,11 +262,43 @@ class DownloadManager {
       // Show success message
       showSuccess(`Download completed! Using Fast Track (API ${data.apiUsed})`);
     } catch (error) {
-      console.error('Download failed:', error);
+      console.error('Fast Track download failed:', error);
+      
+      // Check if link expired or not found
+      const isLinkExpired = error.message.includes('404') || 
+                           error.message.includes('Not Found') ||
+                           error.message.includes('expired') ||
+                           error.message.includes('Proxy download failed');
+      
+      if (isLinkExpired) {
+        console.log('Fast Track link expired, falling back to Stable Track');
+        showWarning('Fast Track link expired. Switching to Stable Track...');
+        
+        // Get original URL from input
+        const urlInput = document.getElementById('urlInput');
+        if (urlInput && urlInput.value) {
+          try {
+            // Call API to create Stable Track task
+            const response = await fetch(`/api/download?url=${encodeURIComponent(urlInput.value)}&force_stable=true`);
+            const fallbackData = await response.json();
+            
+            if (fallbackData.success && fallbackData.type === 'async') {
+              // Handle as async download
+              this.handleAsyncDownload(fallbackData);
+              return; // Don't reset isDownloading yet
+            }
+          } catch (fallbackError) {
+            console.error('Stable Track fallback failed:', fallbackError);
+          }
+        }
+      }
+      
       showErrorWithRetry(error.message || 'Download failed. Please try again.');
     } finally {
-      // Reset state
-      this.isDownloading = false;
+      // Reset state only if not falling back to Stable Track
+      if (!this.currentTaskId) {
+        this.isDownloading = false;
+      }
     }
   }
 

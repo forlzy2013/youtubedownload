@@ -40,6 +40,7 @@ export default async function handler(req, res) {
 
     // Extract URL from query or body
     const url = req.method === 'GET' ? req.query.url : req.body?.url;
+    const forceStable = req.query.force_stable === 'true' || req.body?.force_stable === true;
 
     // Validate URL parameter
     if (!url) {
@@ -60,6 +61,19 @@ export default async function handler(req, res) {
     }
 
     console.log(`📥 Download request for video: ${videoId}`);
+
+    // TEMPORARY FIX: Skip Fast Track entirely due to link expiration issues
+    // RapidAPI links expire in 2-5 seconds, causing 404 errors
+    // Use Stable Track (Render Worker with yt-dlp) for reliable downloads
+    console.log('🔄 Using Stable Track (Fast Track temporarily disabled due to link expiration)');
+    return await handleStableTrack(videoId, url, res);
+
+    /* DISABLED: Fast Track has link expiration issues
+    // If forced to use Stable Track, skip Fast Track
+    if (forceStable) {
+      console.log('🔄 Forcing Stable Track (Fast Track failed)');
+      return await handleStableTrack(videoId, url, res);
+    }
 
     // Get available APIs from QuotaManager
     const quotaManager = getQuotaManager();
@@ -95,6 +109,7 @@ export default async function handler(req, res) {
     // Fast Track failed, use Stable Track
     console.log('⚠️ Fast Track failed, switching to Stable Track');
     return await handleStableTrack(videoId, url, res);
+    */
 
   } catch (error) {
     console.error('Error in download endpoint:', error);
