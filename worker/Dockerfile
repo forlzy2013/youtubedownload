@@ -22,6 +22,11 @@ RUN npm install --only=production
 # Copy application code
 COPY . .
 
+# Debug: List files to verify copy
+RUN echo "=== Contents of /app directory ===" && ls -la /app
+RUN echo "=== Checking server.js ===" && ls -la /app/server.js || echo "ERROR: server.js not found!"
+RUN echo "=== Current working directory ===" && pwd
+
 # Expose port
 EXPOSE 3000
 
