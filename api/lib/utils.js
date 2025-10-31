@@ -9,16 +9,23 @@
  * @param {number} maxLength - Maximum length (default: 200)
  * @returns {string} Sanitized filename with .mp3 extension
  */
-export function sanitizeFilename(filename, maxLength = 200) {
+export function sanitizeFilename(filename, maxLength = 100) {
   if (!filename || typeof filename !== 'string') {
     return 'download.mp3';
   }
 
-  // Remove illegal characters: < > : " / \ | ? *
+  // Try to decode URL encoding
+  try {
+    filename = decodeURIComponent(filename);
+  } catch (e) {
+    // Keep original if decode fails
+  }
+
+  // Remove illegal characters: < > : " / \ | ? * and control characters
   let sanitized = filename
-    .replace(/[<>:"/\\|?*]/g, '')
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, '')
     .replace(/\s+/g, '-')
-    .replace(/\.+/g, '.')
+    .replace(/\.{2,}/g, '.')
     .trim();
 
   // Remove leading/trailing dots and dashes

@@ -56,16 +56,29 @@ export default async function handler(req, res) {
       throw new Error(`External server returned ${response.status}`);
     }
 
-    // Get content type
+    // Get content type and length
     const contentType = response.headers.get('content-type') || 'audio/mpeg';
     const contentLength = response.headers.get('content-length');
 
+    // Check file size (Vercel has 4.5MB response limit)
+    if (contentLength) {
+      const sizeMB = parseInt(contentLength) / 1024 / 1024;
+      if (sizeMB > 4.5) {
+        return res.status(413).json({
+          success: false,
+          error: 'File too large for proxy (>4.5MB). Please use Stable Track.'
+        });
+      }
+    }
+
     // Set response headers
     res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', 'attachment; filename="download.mp3"');
+    res.setHeader('Cache-Control', 'no-cache');
+    
     if (contentLength) {
       res.setHeader('Content-Length', contentLength);
     }
-    res.setHeader('Content-Disposition', 'attachment');
 
     // Stream the response
     const buffer = await response.arrayBuffer();

@@ -288,12 +288,51 @@ class DownloadManager {
   }
 
   /**
+   * Sanitize filename for download
+   * @param {string} filename - Original filename
+   * @returns {string} Sanitized filename
+   */
+  sanitizeFilename(filename) {
+    if (!filename) return 'download.mp3';
+    
+    // Try to decode URL encoding
+    try {
+      filename = decodeURIComponent(filename);
+    } catch (e) {
+      // Keep original if decode fails
+    }
+    
+    // Remove invalid characters
+    let sanitized = filename
+      .replace(/[<>:"/\\|?*\x00-\x1f]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/\.{2,}/g, '.')
+      .replace(/^[.-]+|[.-]+$/g, '')
+      .trim();
+    
+    // Truncate if too long
+    if (sanitized.length > 100) {
+      sanitized = sanitized.substring(0, 96);
+    }
+    
+    // Ensure .mp3 extension
+    if (!sanitized.endsWith('.mp3')) {
+      sanitized += '.mp3';
+    }
+    
+    return sanitized || 'download.mp3';
+  }
+
+  /**
    * Trigger browser download using temporary <a> element
    * @param {string} url - Download URL
    * @param {string} filename - Filename
    */
   async triggerBrowserDownload(url, filename) {
     try {
+      // Sanitize filename
+      filename = this.sanitizeFilename(filename);
+      
       // For external URLs, try direct download first, then proxy if CORS fails
       if (url.startsWith('http://') || url.startsWith('https://')) {
         console.log('Downloading from external URL:', url);
@@ -302,12 +341,17 @@ class DownloadManager {
         showProcessing('Downloading file...');
         
         let blob;
+        let method = 'unknown';
         
         try {
           // Try direct download first
+          console.log('Trying direct download...');
           const response = await fetch(url, {
             mode: 'cors',
-            credentials: 'omit'
+            credentials: 'omit',
+            headers: {
+              'Accept': 'audio/mpeg,audio/*,*/*'
+            }
           });
           
           if (!response.ok) {
@@ -315,21 +359,32 @@ class DownloadManager {
           }
           
           blob = await response.blob();
+          method = 'direct';
           console.log('Direct download successful');
         } catch (directError) {
-          console.warn('Direct download failed, trying proxy:', directError.message);
+          console.warn('Direct download failed:', directError.message);
           
           // Try proxy download
+          console.log('Trying proxy download...');
           const proxyUrl = `/api/proxy-download?url=${encodeURIComponent(url)}`;
           const proxyResponse = await fetch(proxyUrl);
           
           if (!proxyResponse.ok) {
-            throw new Error('Download failed. The link may have expired.');
+            const errorData = await proxyResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Proxy download failed');
           }
           
           blob = await proxyResponse.blob();
+          method = 'proxy';
           console.log('Proxy download successful');
         }
+        
+        // Validate blob
+        if (!blob || blob.size === 0) {
+          throw new Error('Downloaded file is empty');
+        }
+        
+        console.log(`Downloaded ${(blob.size / 1024 / 1024).toFixed(2)}MB via ${method}`);
         
         // Create object URL
         const blobUrl = URL.createObjectURL(blob);
@@ -337,7 +392,7 @@ class DownloadManager {
         // Create download link
         const a = document.createElement('a');
         a.href = blobUrl;
-        a.download = filename || 'download.mp3';
+        a.download = filename;
         a.style.display = 'none';
         
         document.body.appendChild(a);
@@ -354,7 +409,7 @@ class DownloadManager {
         // For data URLs or same-origin URLs, use direct download
         const a = document.createElement('a');
         a.href = url;
-        a.download = filename || 'download.mp3';
+        a.download = filename;
         a.style.display = 'none';
         
         document.body.appendChild(a);
